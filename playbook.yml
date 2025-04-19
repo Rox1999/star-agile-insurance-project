@@ -1,0 +1,115 @@
+---
+- name: Install Java (OpenJDK 17), Maven and Docker on all servers
+  hosts: all
+  become: yes
+  vars:
+    java_version: "17"
+    maven_version: "3.9.6"
+    maven_home: "/opt/apache-maven-{{ maven_version }}"
+
+  tasks:
+    - name: Update apt package index
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install required system packages
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - software-properties-common
+        - gnupg
+        - git
+        - wget
+
+    - name: Install OpenJDK 17
+      apt:
+        name: "openjdk-{{ java_version }}-jdk"
+        state: present
+
+    - name: Download Maven
+      get_url:
+        url: "https://archive.apache.org/dist/maven/maven-3/{{ maven_version }}/binaries/apache-maven-{{ maven_version }}-bin.tar.gz"
+        dest: "/tmp/maven.tar.gz"
+        checksum: "sha512:https://archive.apache.org/dist/maven/maven-3/{{ maven_version }}/binaries/apache-maven-{{ maven_version }}-bin.tar.gz.sha512"
+
+    - name: Extract Maven
+      unarchive:
+        src: "/tmp/maven.tar.gz"
+        dest: "/opt"
+        remote_src: yes
+        creates: "{{ maven_home }}/bin/mvn"
+
+    - name: Create symlink for Maven
+      file:
+        src: "{{ maven_home }}/bin/mvn"
+        dest: /usr/bin/mvn
+        state: link
+        force: yes
+
+    - name: Configure environment for Maven
+      blockinfile:
+        path: /etc/profile.d/maven.sh
+        create: yes
+        mode: '0644'
+        block: |
+          export MAVEN_HOME={{ maven_home }}
+          export PATH="$MAVEN_HOME/bin:$PATH"
+
+    - name: Add Docker GPG key
+      apt_key:
+        url: "https://download.docker.com/linux/ubuntu/gpg"
+        state: present
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Install Docker packages
+      apt:
+        name: "{{ item }}"
+        state: latest
+        update_cache: yes
+      loop:
+        - docker-ce
+        - docker-ce-cli
+        - containerd.io
+        - docker-buildx-plugin
+        - docker-compose-plugin
+
+    - name: Add root user to docker group
+      user:
+        name: root
+        groups: docker
+        append: yes
+
+    # Verification tasks
+    - name: Verify Java installation
+      command: java -version
+      register: java_version
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Verify Maven installation
+      command: mvn --version
+      register: mvn_version
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Verify Docker installation
+      command: docker --version
+      register: docker_version
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Show installation results
+      debug:
+        msg:
+          - "Java version: {{ java_version.stderr_lines[0] | default('Java not found') }}"
+          - "Maven version: {{ (mvn_version.stdout_lines[0] | default('Maven not found')) if mvn_version is not failed else 'Maven not found' }}"
+          - "Docker version: {{ docker_version.stdout | default('Docker not found') }}"
