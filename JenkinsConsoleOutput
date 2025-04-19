@@ -1,0 +1,198 @@
+Started by GitHub push by Rox1999
+[Pipeline] Start of Pipeline
+[Pipeline] node
+Running on Jenkins in /var/lib/jenkins/workspace/CPTEST
+[Pipeline] {
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Checkout Code)
+[Pipeline] git
+The recommended git tool is: NONE
+No credentials specified
+ > git rev-parse --resolve-git-dir /var/lib/jenkins/workspace/CPTEST/.git # timeout=10
+Fetching changes from the remote Git repository
+ > git config remote.origin.url https://github.com/Rox1999/star-agile-insurance-project.git # timeout=10
+Fetching upstream changes from https://github.com/Rox1999/star-agile-insurance-project.git
+ > git --version # timeout=10
+ > git --version # 'git version 2.34.1'
+ > git fetch --tags --force --progress -- https://github.com/Rox1999/star-agile-insurance-project.git +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git rev-parse refs/remotes/origin/master^{commit} # timeout=10
+Checking out Revision 1d07a16c6316fc009c55f7dd76d774f07ba7a4bb (refs/remotes/origin/master)
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f 1d07a16c6316fc009c55f7dd76d774f07ba7a4bb # timeout=10
+ > git branch -a -v --no-abbrev # timeout=10
+ > git branch -D master # timeout=10
+ > git checkout -b master 1d07a16c6316fc009c55f7dd76d774f07ba7a4bb # timeout=10
+Commit message: "Update Jenkinsfile"
+ > git rev-list --no-walk 527c10c2e98f3eb7fdd62776d3e80d79edb3b642 # timeout=10
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Build with Maven)
+[Pipeline] sh
++ mvn clean package -DskipTests
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------< com.project.staragile:insure-me >-------------------
+[INFO] Building Insure-me 1.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ insure-me ---
+[INFO] Deleting /var/lib/jenkins/workspace/CPTEST/target
+[INFO] 
+[INFO] --- resources:3.2.0:resources (default-resources) @ insure-me ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Using 'UTF-8' encoding to copy filtered properties files.
+[INFO] Copying 1 resource
+[INFO] Copying 31 resources
+[INFO] 
+[INFO] --- compiler:3.10.1:compile (default-compile) @ insure-me ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 5 source files to /var/lib/jenkins/workspace/CPTEST/target/classes
+[INFO] 
+[INFO] --- resources:3.2.0:testResources (default-testResources) @ insure-me ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Using 'UTF-8' encoding to copy filtered properties files.
+[INFO] skip non existing resourceDirectory /var/lib/jenkins/workspace/CPTEST/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.10.1:testCompile (default-testCompile) @ insure-me ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 1 source file to /var/lib/jenkins/workspace/CPTEST/target/test-classes
+[INFO] 
+[INFO] --- surefire:2.22.2:test (default-test) @ insure-me ---
+[INFO] Tests are skipped.
+[INFO] 
+[INFO] --- jar:3.2.2:jar (default-jar) @ insure-me ---
+[INFO] Building jar: /var/lib/jenkins/workspace/CPTEST/target/insure-me-1.0.jar
+[INFO] 
+[INFO] --- spring-boot:2.7.4:repackage (repackage) @ insure-me ---
+[INFO] Replacing main artifact with repackaged archive
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  4.324 s
+[INFO] Finished at: 2025-04-19T13:27:28Z
+[INFO] ------------------------------------------------------------------------
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Build Docker Image)
+[Pipeline] sh
++ docker build -t insurance-app:latest .
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 142B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/openjdk:11
+#2 DONE 1.4s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [1/2] FROM docker.io/library/openjdk:11@sha256:99bac5bf83633e3c7399aed725c8415e7b569b54e03e4599e580fc9cdb7c21ab
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 40.48MB 0.3s done
+#5 DONE 0.3s
+
+#4 [1/2] FROM docker.io/library/openjdk:11@sha256:99bac5bf83633e3c7399aed725c8415e7b569b54e03e4599e580fc9cdb7c21ab
+#4 CACHED
+
+#6 [2/2] COPY target/*.jar app.jar
+#6 DONE 1.0s
+
+#7 exporting to image
+#7 exporting layers
+#7 exporting layers 0.2s done
+#7 writing image sha256:1d49d2e7f3c0fecdad192a1cf25bbf6f338bcad7fdc4408aeb098fc17a473a1c done
+#7 naming to docker.io/library/insurance-app:latest done
+#7 DONE 0.2s
++ docker save insurance-app:latest -o insurance-app.tar
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Deploy to Test Server)
+[Pipeline] sshagent
+[ssh-agent] Using credentials root (FOR CP)
+$ ssh-agent
+SSH_AUTH_SOCK=/tmp/ssh-XXXXXX51aIJg/agent.18646
+SSH_AGENT_PID=18649
+Running ssh-add (command line suppressed)
+Identity added: /var/lib/jenkins/workspace/CPTEST@tmp/private_key_6209869663765975036.key (jenkins@ip-172-31-46-107)
+[ssh-agent] Started.
+[Pipeline] {
+[Pipeline] sh
++ scp insurance-app.tar root@3.110.174.104:/root/
++ ssh root@3.110.174.104 
+                            docker load -i /root/insurance-app.tar &&
+                            docker stop insurance-app || true &&
+                            docker rm insurance-app || true &&
+                            docker run -d --name insurance-app -p 8080:8080 insurance-app:latest
+                        
+The image insurance-app:latest already exists, renaming the old one with ID sha256:3c0fabc418d315a62cac85e5c02b62a899bab58d17cad122f2d570064e7902b6 to empty string
+Loaded image: insurance-app:latest
+insurance-app
+insurance-app
+c21f0a7e498a5a649a541c416c3b96a7fee056a4fdc35b0f3f9c8b06cbb95d99
+[Pipeline] }
+$ ssh-agent -k
+unset SSH_AUTH_SOCK;
+unset SSH_AGENT_PID;
+echo Agent pid 18649 killed;
+[ssh-agent] Stopped.
+[Pipeline] // sshagent
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Approval for Prod)
+[Pipeline] input
+Proceed to Production Deployment?
+Proceed or Abort
+Approved by admin
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Deploy to Prod Server)
+[Pipeline] sshagent
+[ssh-agent] Using credentials root (FOR CP)
+$ ssh-agent
+SSH_AUTH_SOCK=/tmp/ssh-XXXXXXDl90s6/agent.18696
+SSH_AGENT_PID=18700
+Running ssh-add (command line suppressed)
+Identity added: /var/lib/jenkins/workspace/CPTEST@tmp/private_key_351244942213057559.key (jenkins@ip-172-31-46-107)
+[ssh-agent] Started.
+[Pipeline] {
+[Pipeline] sh
++ scp insurance-app.tar root@43.204.212.193:/root/
++ ssh root@43.204.212.193 
+                            docker load -i /root/insurance-app.tar &&
+                            docker stop insurance-app || true &&
+                            docker rm insurance-app || true &&
+                            docker run -d --name insurance-app -p 8080:8080 insurance-app:latest
+                        
+The image insurance-app:latest already exists, renaming the old one with ID sha256:3c0fabc418d315a62cac85e5c02b62a899bab58d17cad122f2d570064e7902b6 to empty string
+Loaded image: insurance-app:latest
+insurance-app
+insurance-app
+71e2251df986183d809ccf21ad1037f89ba6db92086851cfcbf377126bd81ff5
+[Pipeline] }
+$ ssh-agent -k
+unset SSH_AUTH_SOCK;
+unset SSH_AGENT_PID;
+echo Agent pid 18700 killed;
+[ssh-agent] Stopped.
+[Pipeline] // sshagent
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] End of Pipeline
+Finished: SUCCESS
